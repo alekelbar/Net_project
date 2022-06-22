@@ -6,7 +6,7 @@ Adjunto la fuente que yo utilice: https://www.youtube.com/watch?v=QDsbDSowNUE&t=
 
 Sin embargo, este video está incompleto, necesitará agregar la indicación al VM del .DLL
 
-Guarde open Cv en él dice local C, e indique la dirección del path en netbeans con las propiedades del proyecto > run y agregue algo como esto: 
+Guarde open Cv en el disco local C, e indique la dirección del path en netbeans con las propiedades del proyecto > run y agregue algo como esto: 
 -Djava.library.path="C:\opencv\build\java\x64". Le abjunto la fuente que utilice para esto.
 
 https://stackoverflow.com/questions/29356974/exception-in-thread-main-java-lang-unsatisfiedlinkerror-no-opencv-java2410-in
