@@ -21,10 +21,10 @@ import java.util.logging.Logger;
  */
 public class Server extends Thread {
 
-    public static ArrayList<Flujo> flujos = new ArrayList<>();
     public static ArrayList<User> users = new ArrayList<>();
-    public static ArrayList<String> stock;
+    public static ArrayList<String> stock = new ArrayList<>();
     public static VideoList video_list;
+    public static ArrayList<Flujo> conectados = new ArrayList<>();
 
     public static void main(String[] args) throws IOException {
         cargarUsuarios();
@@ -44,7 +44,6 @@ public class Server extends Thread {
             try {
                 // Voy a recibir la información de autenticación del usuario...
                 /*Socket del cliente*/
-                System.out.println("Escuchando por conexiones...");
                 Socket clientSocket = server.accept(); // Aceptando la conexión
 
                 // Crear el flujo de atención a este usuario...
@@ -103,7 +102,6 @@ public class Server extends Thread {
                 Logger.getLogger(Flujo.class.getName()).log(Level.SEVERE, null, ex);
             }
         }
-        System.out.println("Hay " + users.size() + " Usuarios");
     }
 
     public static void construirUsuario(String userInfo) {

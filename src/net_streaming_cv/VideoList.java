@@ -36,9 +36,6 @@ public final class VideoList {
                 available_videos.add(dir);
             }
         }
-
-        System.out.println("Longitud: " + available_videos.size());
-
         return available_videos;
     }
 }

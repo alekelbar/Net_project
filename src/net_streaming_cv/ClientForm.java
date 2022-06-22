@@ -16,8 +16,14 @@ import java.net.Socket;
 import java.util.ArrayList;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import javax.swing.filechooser.FileNameExtensionFilter;
 
+/**
+ * LISTA DE TAREAS... Poner alertas cuando no existe sessión para las distintas
+ * acciones...
+ */
 /**
  *
  * @author INTEL
@@ -32,6 +38,9 @@ public class ClientForm extends javax.swing.JFrame {
     private ArrayList<String> avaible_stock;
     private DefaultListModel<String> model;
     public String hostname;
+    DataInputStream input;
+    DataOutputStream output;
+    private boolean reconect = false;
 
     public ClientForm() {
         this.hostname = "";
@@ -42,38 +51,54 @@ public class ClientForm extends javax.swing.JFrame {
         Loading.setVisible(false);
     }
 
-    void setClient(Socket socket) {
-        this.client = socket;
-    }
-
-    void reconectar() {
-        String hostname = "";
-        do {
-            hostname = JOptionPane.showInputDialog("ingrese un host valido");
-            if (hostname == null) {
-                hostname = "";
-            }
-        } while (hostname.isEmpty());
-
-        System.out.println("hostname futuro..." + hostname);
+    void setClient() {
         try {
-            // realizar la conexión de prueba... ¡Que miedo gente!
-            this.hostname = hostname;
-            client = new Socket(hostname, 8000);
-            this.setClient(client);
-            DataOutputStream output = new DataOutputStream(client.getOutputStream());
+            this.client = new Socket(hostname, 8000);
+            this.input = new DataInputStream(client.getInputStream());
+            this.output = new DataOutputStream(client.getOutputStream());
+
             output.writeUTF("start");
             output.flush();
 
             // recibir la respuesta...
-            DataInputStream input = new DataInputStream(client.getInputStream());
             String status = input.readUTF();
             this.label_status.setText("Servidor: " + status);
 
-            this.updateStock(output, input);
+            this.updateStock();
+
         } catch (IOException ex) {
+            JOptionPane.showMessageDialog(null, "No se pudo conectar a este HOST...");
             this.label_status.setText("Servidor: Inactivo");
         }
+    }
+
+    void conectar() {
+        String zeroTo255
+                = "(\\d{1,2}|(0|1)\\"
+                + "d{2}|2[0-4]\\d|25[0-5])";
+        String regex
+                = zeroTo255 + "\\."
+                + zeroTo255 + "\\."
+                + zeroTo255 + "\\."
+                + zeroTo255;
+        Pattern p = Pattern.compile(regex);
+        boolean valid = false;
+        boolean incorrect = true;
+        do {
+
+            hostname = JOptionPane.showInputDialog("ingrese un host valido");
+            if (hostname == null) {
+                hostname = "";
+            }
+            Matcher m = p.matcher(hostname);
+            valid = m.matches();
+            incorrect = valid || hostname.toLowerCase().equals("localhost");
+
+        } while (!incorrect);
+
+        // realizar la conexión de prueba... ¡Que miedo gente!
+        this.setClient();
+
     }
 
     /**
@@ -93,12 +118,11 @@ public class ClientForm extends javax.swing.JFrame {
         btn_regis = new javax.swing.JButton();
         jLabel13 = new javax.swing.JLabel();
         jLabel14 = new javax.swing.JLabel();
-        btn_AuthUser = new javax.swing.JButton();
+        btn_loginUser = new javax.swing.JButton();
         btn_actualizar = new javax.swing.JButton();
         btn_Upload = new javax.swing.JButton();
         jLabel15 = new javax.swing.JLabel();
         btn_Visualizar = new javax.swing.JButton();
-        jButton1 = new javax.swing.JButton();
         label_status = new javax.swing.JLabel();
         jPanel2 = new javax.swing.JPanel();
         jScrollPane2 = new javax.swing.JScrollPane();
@@ -120,19 +144,9 @@ public class ClientForm extends javax.swing.JFrame {
 
         txt_username.setHorizontalAlignment(javax.swing.JTextField.CENTER);
         txt_username.setToolTipText("username");
-        txt_username.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                txt_usernameActionPerformed(evt);
-            }
-        });
 
         txt_password.setHorizontalAlignment(javax.swing.JTextField.CENTER);
         txt_password.setToolTipText("password");
-        txt_password.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                txt_passwordActionPerformed(evt);
-            }
-        });
 
         btn_regis.setBackground(new java.awt.Color(57, 62, 70));
         btn_regis.setFont(new java.awt.Font("Fira Code SemiBold", 1, 18)); // NOI18N
@@ -154,13 +168,13 @@ public class ClientForm extends javax.swing.JFrame {
         jLabel14.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
         jLabel14.setText("Username");
 
-        btn_AuthUser.setBackground(new java.awt.Color(57, 62, 70));
-        btn_AuthUser.setFont(new java.awt.Font("Fira Code SemiBold", 1, 18)); // NOI18N
-        btn_AuthUser.setForeground(new java.awt.Color(255, 255, 255));
-        btn_AuthUser.setText("Autenticar");
-        btn_AuthUser.addActionListener(new java.awt.event.ActionListener() {
+        btn_loginUser.setBackground(new java.awt.Color(57, 62, 70));
+        btn_loginUser.setFont(new java.awt.Font("Fira Code SemiBold", 1, 18)); // NOI18N
+        btn_loginUser.setForeground(new java.awt.Color(255, 255, 255));
+        btn_loginUser.setText("Autenticar");
+        btn_loginUser.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                btn_AuthUserActionPerformed(evt);
+                btn_loginUserActionPerformed(evt);
             }
         });
 
@@ -199,16 +213,6 @@ public class ClientForm extends javax.swing.JFrame {
             }
         });
 
-        jButton1.setBackground(new java.awt.Color(57, 62, 70));
-        jButton1.setFont(new java.awt.Font("Fira Code", 0, 12)); // NOI18N
-        jButton1.setForeground(new java.awt.Color(255, 255, 255));
-        jButton1.setText("Reconectar");
-        jButton1.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jButton1ActionPerformed(evt);
-            }
-        });
-
         javax.swing.GroupLayout login_panelLayout = new javax.swing.GroupLayout(login_panel);
         login_panel.setLayout(login_panelLayout);
         login_panelLayout.setHorizontalGroup(
@@ -222,13 +226,12 @@ public class ClientForm extends javax.swing.JFrame {
                             .addComponent(jLabel14, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                             .addComponent(txt_username)
                             .addComponent(txt_password)
-                            .addComponent(btn_AuthUser, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                            .addComponent(btn_loginUser, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                             .addComponent(jLabel15, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                             .addComponent(btn_actualizar, javax.swing.GroupLayout.DEFAULT_SIZE, 357, Short.MAX_VALUE)
                             .addComponent(btn_regis, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                             .addComponent(btn_Upload, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                            .addComponent(btn_Visualizar, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                            .addComponent(jButton1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))))
+                            .addComponent(btn_Visualizar, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))))
                 .addContainerGap())
         );
         login_panelLayout.setVerticalGroup(
@@ -245,7 +248,7 @@ public class ClientForm extends javax.swing.JFrame {
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(txt_password, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                .addComponent(btn_AuthUser, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addComponent(btn_loginUser, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(btn_regis, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
@@ -254,9 +257,7 @@ public class ClientForm extends javax.swing.JFrame {
                 .addComponent(btn_Visualizar, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(btn_actualizar, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                .addGap(5, 5, 5)
-                .addComponent(jButton1, javax.swing.GroupLayout.PREFERRED_SIZE, 36, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap())
+                .addGap(47, 47, 47))
         );
 
         label_status.setFont(new java.awt.Font("Fira Code", 0, 18)); // NOI18N
@@ -287,16 +288,17 @@ public class ClientForm extends javax.swing.JFrame {
             .addComponent(jScrollPane2)
             .addGroup(jPanel2Layout.createSequentialGroup()
                 .addContainerGap()
-                .addComponent(jLabel1, javax.swing.GroupLayout.DEFAULT_SIZE, 634, Short.MAX_VALUE)
+                .addComponent(jLabel1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                 .addContainerGap())
         );
         jPanel2Layout.setVerticalGroup(
             jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel2Layout.createSequentialGroup()
-                .addGap(30, 30, 30)
+                .addContainerGap()
                 .addComponent(jLabel1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                .addGap(18, 18, 18)
-                .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 306, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 239, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addContainerGap())
         );
 
         javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
@@ -323,24 +325,31 @@ public class ClientForm extends javax.swing.JFrame {
                     .addComponent(login_panel, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addGroup(jPanel1Layout.createSequentialGroup()
                         .addContainerGap()
-                        .addComponent(jPanel2, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(label_status)
-                .addGap(18, 18, 18)
+                        .addComponent(jPanel2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                        .addComponent(label_status)))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                 .addComponent(Loading))
         );
+
+        video_label.setBackground(new java.awt.Color(57, 62, 70));
+
+        lbl_video.setBackground(new java.awt.Color(57, 62, 70));
 
         javax.swing.GroupLayout video_labelLayout = new javax.swing.GroupLayout(video_label);
         video_label.setLayout(video_labelLayout);
         video_labelLayout.setHorizontalGroup(
             video_labelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(video_labelLayout.createSequentialGroup()
-                .addComponent(lbl_video, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                .addContainerGap())
+                .addGap(60, 60, 60)
+                .addComponent(lbl_video, javax.swing.GroupLayout.PREFERRED_SIZE, 637, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
         video_labelLayout.setVerticalGroup(
             video_labelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(lbl_video, javax.swing.GroupLayout.DEFAULT_SIZE, 553, Short.MAX_VALUE)
+            .addGroup(video_labelLayout.createSequentialGroup()
+                .addComponent(lbl_video, javax.swing.GroupLayout.PREFERRED_SIZE, 381, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(0, 533, Short.MAX_VALUE))
         );
 
         javax.swing.GroupLayout rootLayout = new javax.swing.GroupLayout(root);
@@ -354,7 +363,7 @@ public class ClientForm extends javax.swing.JFrame {
             rootLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(rootLayout.createSequentialGroup()
                 .addContainerGap()
-                .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, 458, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, 360, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(video_label, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
@@ -379,30 +388,20 @@ public class ClientForm extends javax.swing.JFrame {
             AuthForm auth_form = new AuthForm(this, true);
             auth_form.setClient(client);
             auth_form.setVisible(true);
+        } else {
+            JOptionPane.showMessageDialog(null, "No se encuentra conectado a ningun HOST");
         }
     }//GEN-LAST:event_btn_regisActionPerformed
 
-    private void txt_passwordActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_txt_passwordActionPerformed
-        // TODO add your handling code here:
-    }//GEN-LAST:event_txt_passwordActionPerformed
-
-    private void txt_usernameActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_txt_usernameActionPerformed
-        // TODO add your handling code here:
-    }//GEN-LAST:event_txt_usernameActionPerformed
-
-    private void btn_AuthUserActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btn_AuthUserActionPerformed
+    private void btn_loginUserActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btn_loginUserActionPerformed
         // TODO add your handling code here: Codigo para conectar con el servidor...
         String username = txt_username.getText(), password = txt_password.getText();
         if (!username.isEmpty() && !password.isEmpty()) {
             try {
-                DataOutputStream output = new DataOutputStream(client.getOutputStream());
                 output.writeUTF("login");
                 output.flush();
 
-                //
-                DataInputStream input = new DataInputStream(client.getInputStream());
                 String string = input.readUTF();
-
                 if (string.equals("continue")) {
                     output.writeUTF(username + ":" + password);
                     output.flush();
@@ -412,13 +411,19 @@ public class ClientForm extends javax.swing.JFrame {
                         this.auth = true;
                         this.btn_regis.setEnabled(false);
                         this.jList_video.setVisible(true);
+                        this.jList_video.setModel(model);
                         this.txt_password.setEditable(false);
                         this.txt_username.setEditable(false);
-                        this.btn_AuthUser.setEnabled(false);
+                        this.btn_loginUser.setEnabled(false);
+                        this.updateStock();
                     } else {
                         JOptionPane.showMessageDialog(null, "El usuario no corresponde a ninguno registrado...");
                     }
+
+                } else {
+                    JOptionPane.showMessageDialog(null, "El servidor no responde, trate de reconectar...");
                 }
+
             } catch (IOException ex) {
                 System.out.println("ex: " + ex.getMessage());
             }
@@ -427,17 +432,10 @@ public class ClientForm extends javax.swing.JFrame {
             JOptionPane.showMessageDialog(null, "Todos los campos son requeridos.");
         }
 
-    }//GEN-LAST:event_btn_AuthUserActionPerformed
+    }//GEN-LAST:event_btn_loginUserActionPerformed
 
     private void btn_actualizarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btn_actualizarActionPerformed
-        try {
-            DataOutputStream output = new DataOutputStream(client.getOutputStream());
-            DataInputStream input = new DataInputStream(client.getInputStream());
-            updateStock(output, input);
-
-        } catch (IOException ex) {
-            System.out.println("EX: " + ex.getMessage());
-        }
+        updateStock();
     }//GEN-LAST:event_btn_actualizarActionPerformed
 
     private void btn_UploadActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btn_UploadActionPerformed
@@ -462,10 +460,8 @@ public class ClientForm extends javax.swing.JFrame {
 
             // Creando un lector de archivos
             if (selectedVideo != null) {
-                DataOutputStream output = null;
                 // mandar la instrucción ....
                 try {
-                    output = new DataOutputStream(client.getOutputStream());
                     output.writeUTF("upload:" + selectedVideo.getName());
                     output.flush();
 
@@ -530,10 +526,10 @@ public class ClientForm extends javax.swing.JFrame {
                     }
                     file_org.close();
 
-                    DataInputStream input;
+                    DataInputStream input_test;
                     try {
                         // Probar conexión...
-                        input = new DataInputStream(client.getInputStream());
+                        input_test = new DataInputStream(client.getInputStream());
 
                     } catch (IOException ex) {
 
@@ -543,7 +539,7 @@ public class ClientForm extends javax.swing.JFrame {
                         output.writeUTF("start");
                         output.flush();
                         input.readUTF();
-                        this.updateStock(output, input);
+                        this.updateStock();
                     }
 
                 } catch (IOException ex) {
@@ -551,69 +547,65 @@ public class ClientForm extends javax.swing.JFrame {
                 }
                 this.Loading.setVisible(false);
                 this.btn_Upload.setEnabled(true);
-                JOptionPane.showMessageDialog(null, "¡Video subido al servidor! Actualice su stock");
+                updateStock();
             }
             this.btn_Upload.setEnabled(true);
+        } else {
+            JOptionPane.showMessageDialog(null, "No se encuentra conectado a ningun HOST, necesita autorizacion");
         }
     }//GEN-LAST:event_btn_UploadActionPerformed
 
     private void btn_VisualizarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btn_VisualizarActionPerformed
-        DataInputStream input = null;
-        DataOutputStream output = null;
-        ObjectInputStream input_obj = null;
-        try {
-            // obtener un recurso de video.
-            // TODO add your handling code here:
-            String value = this.jList_video.getSelectedValue();
-            if(value == null){
-                return;
-            }
-            
-            System.out.println("Value: " + value);
-            input = new DataInputStream(client.getInputStream());
-            output = new DataOutputStream(client.getOutputStream());
-            
-            System.out.println("Se envia: " + value);
-            output.writeUTF("watch:" + value);
-            output.flush();
+        if (auth) {
+            try {
+                // obtener un recurso de video.
+                // TODO add your handling code here:
 
-            input_obj = new ObjectInputStream(client.getInputStream());
+                String value = "";
 
-            // objecto para alogar el frame
-            GetVideoMessage messageObject = new GetVideoMessage();
-            
-            //leeo el video...
-            while (true) {
-                System.out.println("Entramos: Desde el cliente recibiendo...");
-                Object aux = input_obj.readObject();
-
-                if (aux instanceof GetVideoMessage) {
-                    messageObject = (GetVideoMessage) aux;
-                    lbl_video.setIcon(messageObject.imgDataScaled);
-                    if (messageObject.lastFrame) {
-                        break;
-                    }
+                value = this.jList_video.getSelectedValue();
+                if (value.isEmpty()) {
+                    JOptionPane.showMessageDialog(null, "No existe un elemento valido seleccionado...");
                 }
 
-            }
+                output.writeUTF("watch:" + value);
+                output.flush();
+                System.out.println("Cliente pregunta watch:" + value);
 
-        } catch (IOException ex) {
-            Logger.getLogger(ClientForm.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (ClassNotFoundException ex) {
-            Logger.getLogger(ClientForm.class.getName()).log(Level.SEVERE, null, ex);
-        } finally {
-            try {
-                input.close();
-            } catch (IOException ex) {
+                String response = input.readUTF();
+                if (!response.equals("acepted")) {
+                    JOptionPane.showMessageDialog(null, "Extrañamente el contenido no se encontro en el servidor...");
+                    return;
+                }
+
+                ObjectInputStream input_obj = new ObjectInputStream(client.getInputStream());
+                System.out.println("Servidor responde un objeto...");
+                // objecto para alojar el frame
+                GetVideoMessage messageObject = new GetVideoMessage();
+
+                Object aux;
+                //leeo el video...
+                while (true) {
+                    aux = input_obj.readObject();
+
+                    if (aux instanceof GetVideoMessage) {
+                        messageObject = (GetVideoMessage) aux; //casting
+                        lbl_video.setIcon(messageObject.imgDataScaled);
+                        if (messageObject.lastFrame) {
+                            System.out.println("Finalizo la recepcion...");
+                            return;
+                        }
+                    }
+                    break; // Para evitar congelarse, pero no funciona :(
+                }
+
+            } catch (IOException | ClassNotFoundException ex) {
                 Logger.getLogger(ClientForm.class.getName()).log(Level.SEVERE, null, ex);
             }
+        } else {
+            JOptionPane.showMessageDialog(null, "No se encuentra autenticado, hagalo para visualizar contenido...");
         }
     }//GEN-LAST:event_btn_VisualizarActionPerformed
-
-    private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
-        // TODO add your handling code here:
-        this.reconectar();
-    }//GEN-LAST:event_jButton1ActionPerformed
 
     /**
      * @param args the command line arguments
@@ -627,42 +619,45 @@ public class ClientForm extends javax.swing.JFrame {
             // Hacer la conexión con el servidor...
             Socket client = null;
             // Pedir la info del host...
-            form.reconectar();
+            form.conectar();
+
         });
 
     }
 
-    void updateStock(DataOutputStream output, DataInputStream input) {
-        try {
-            //definir stock...
-            output.writeUTF("stock");
-            output.flush();
+    void updateStock() {
+        if (auth) {
+            try {
+                //definir stock...
+                output.writeUTF("stock");
+                output.flush();
 
-            // recibir la data
-            String stock_string = input.readUTF();
+                // recibir la data
+                String stock_string = input.readUTF();
 
-            //Operacion de integracion...
-            String[] array_aux = stock_string.split(":");
-            System.out.println("stock string: " + stock_string);
+                //Operacion de integracion...
+                String[] array_aux = stock_string.split(":");
 
-            avaible_stock.clear(); // limpiar
+                avaible_stock.clear(); // limpiar
 
-            for (String aux : array_aux) {
-                avaible_stock.add(aux);
+                for (String aux : array_aux) {
+                    avaible_stock.add(aux);
+                }
+
+                // definir el jlist..
+                this.model.removeAllElements(); // limpiarlo...
+                jList_video.setModel(model);
+
+                for (String string : avaible_stock) {
+                    model.addElement(string);
+                }
+
+            } catch (IOException ex) {
+                System.out.println("ex: " + ex.getMessage());
             }
-
-            // definir el jlist..
-            this.model.removeAllElements(); // limpiarlo...
-            jList_video.setModel(model);
-
-            for (String string : avaible_stock) {
-                model.addElement(string);
-            }
-
-        } catch (IOException ex) {
-            System.out.println("ex: " + ex.getMessage());
+        } else {
+            JOptionPane.showMessageDialog(null, "No se encuentra autenticado, hagalo para mirar el stock");
         }
-
     }
 
     JLabel getStatus() {
@@ -671,12 +666,11 @@ public class ClientForm extends javax.swing.JFrame {
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JLabel Loading;
-    private javax.swing.JButton btn_AuthUser;
     private javax.swing.JButton btn_Upload;
     private javax.swing.JButton btn_Visualizar;
     private javax.swing.JButton btn_actualizar;
+    private javax.swing.JButton btn_loginUser;
     private javax.swing.JButton btn_regis;
-    private javax.swing.JButton jButton1;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel13;
     private javax.swing.JLabel jLabel14;

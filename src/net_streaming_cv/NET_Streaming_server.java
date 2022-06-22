@@ -87,8 +87,7 @@ public class NET_Streaming_server extends JFrame {
             }
 
             // operación de redefinición de escala
-            System.out.println("bandera: " + img == null);
-            Imgproc.resize(img, dest, size, 0.1, 0.1, Imgproc.INTER_AREA);
+            Imgproc.resize(img, dest, size, 1, 1, Imgproc.INTER_AREA);
 
 //            final MatOfByte buffer = new MatOfByte();
             // convert it to bytes

@@ -4,6 +4,7 @@
  */
 package net_streaming_cv;
 
+import java.awt.Image;
 import java.io.Serializable;
 import javax.swing.ImageIcon;
 import org.opencv.core.Mat;
@@ -12,16 +13,15 @@ import org.opencv.core.Mat;
  *
  * @author INTEL
  */
-public class GetVideoMessage implements Serializable{
+public class GetVideoMessage implements Serializable {
 
     /**
      * Video file name
      */
     public String video_name = "";
-    
-    public boolean lastFrame;
-    
-    public ImageIcon imgDataScaled;
-    
-    
+
+    public boolean lastFrame = false;
+
+    public ImageIcon imgDataScaled = new ImageIcon();
+
 }
